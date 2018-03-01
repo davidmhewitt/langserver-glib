@@ -20,6 +20,12 @@
 public class Vls.Server : LanguageServer.Server {
     private ProjectManager manager;
 
+    public Server () {
+        Object (
+            supports_document_formatting: true
+        );
+    }
+
     protected override void initialize (LanguageServer.Types.InitializeParams init_params) {
         manager = new ProjectManager (init_params.rootUri);
         manager.publish_diagnostics.connect (publish_diagnostics);
@@ -31,6 +37,11 @@ public class Vls.Server : LanguageServer.Server {
 
     protected override void did_change (LanguageServer.Types.DidChangeTextDocumentParams params) {
         manager.handle_document_changes (params);
+    }
+
+    protected override Gee.ArrayList<LanguageServer.Types.TextEdit> format_document (LanguageServer.Types.DocumentFormattingParams params) {
+        var changes = new Gee.ArrayList<LanguageServer.Types.TextEdit> ();
+        return changes;
     }
 
     protected override void cleanup () {

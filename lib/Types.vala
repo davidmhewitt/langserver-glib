@@ -80,6 +80,49 @@ public class ServerCapabilities : Object {
      * for backwards compatibility the TextDocumentSyncKind number.
      */
     public TextDocumentSyncOptions textDocumentSync { get; set; }
+
+    /**
+	 * The server provides document formatting.
+	 */
+    public bool documentFormattingProvider { get; set; }
+}
+
+public class DocumentFormattingParams : Object {
+    /**
+     * The document to format.
+     */
+    public string textDocument { get; set; }
+
+    /**
+     * The format options.
+     */
+    public FormattingOptions options { get; set; }
+}
+
+public class FormattingOptions : Object {
+    /**
+     * Size of a tab in spaces.
+     */
+    public int tabSize { get; set; }
+
+    /**
+     * Prefer spaces over tabs.
+     */
+    public bool insertSpaces { get; set; }
+}
+
+public class TextEdit : Object {
+    /**
+     * The range of the text document to be manipulated. To insert
+     * text into a document create a range where start === end.
+     */
+    public Range range { get; set; }
+
+    /**
+     * The string to be inserted. For delete operations use an
+     * empty string.
+     */
+    public string newText { get; set; }
 }
 
 public class InitializeResult : Object {

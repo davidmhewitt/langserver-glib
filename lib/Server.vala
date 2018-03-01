@@ -20,10 +20,13 @@
 namespace LanguageServer {
 
 public abstract class Server : Object {
+    public bool supports_document_formatting { get; construct; default = false; }
+
     public signal void exit (int return_code);
     protected abstract void did_open (Types.TextDocumentItem document);
     protected abstract void did_change (Types.DidChangeTextDocumentParams params);
     protected abstract void initialize (Types.InitializeParams init_params);
+    protected abstract Gee.ArrayList<Types.TextEdit> format_document (Types.DocumentFormattingParams format_params);
     protected abstract void cleanup ();
 
     private Jsonrpc.Server server;
@@ -33,6 +36,7 @@ public abstract class Server : Object {
 
     private const string[] KNOWN_METHODS = {
         "initialize",
+        "textDocument/formatting",
         "shutdown"
     };
 
@@ -67,7 +71,8 @@ public abstract class Server : Object {
                     save = new Types.SaveOptions () {
                         includeText = false
                     }
-                }
+                },
+                documentFormattingProvider = supports_document_formatting
             }
         };
 
@@ -111,6 +116,23 @@ public abstract class Server : Object {
                 return true;
             case "initialize":
                 handle_initialize (client, id, params);
+                return true;
+            case "textDocument/formatting":
+                var data = Json.gvariant_serialize (params);
+                var format_params = Json.gobject_deserialize (typeof (Types.DocumentFormattingParams), data)
+                                    as Types.DocumentFormattingParams;
+
+                var result = format_document (format_params);
+                var array = new Json.Array.sized (result.size);
+
+                foreach (var item in result) {
+                    array.add_element (Json.gobject_serialize (item));
+                }
+
+                var node = new Json.Node (Json.NodeType.ARRAY);
+                node.set_array (array);
+
+                client.reply (id, Json.gvariant_deserialize (node, null), null);
                 return true;
             default:
                 return false;
