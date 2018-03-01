@@ -1,0 +1,93 @@
+/*
+* Copyright (c) 2018 David Hewitt (https://github.com/davidmhewitt)
+*
+* This file is part of Vala Language Server (VLS).
+*
+* VLS is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* VLS is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with VLS.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+namespace LanguageServer {
+public class Client : Object {
+    public string server_path { get; construct; }
+    public uint timeout_duration { get; construct; }
+
+    public signal void server_closed (int exit_code);
+
+    private Jsonrpc.Client vls_client;
+    private Subprocess vls_server;
+    private uint exit_timeout_id = 0;
+
+    construct {
+        vls_server = new Subprocess (SubprocessFlags.STDIN_PIPE | SubprocessFlags.STDOUT_PIPE, server_path);
+        var stream = new SimpleIOStream (vls_server.get_stdout_pipe (), vls_server.get_stdin_pipe ());
+
+        vls_client = new Jsonrpc.Client (stream);
+        await_process_end.begin ();
+    }
+
+    public Client (string server_path, uint timeout_duration = 3000) {
+        Object (server_path: server_path, timeout_duration: timeout_duration);
+    }
+
+    private async Variant? call_method (string method, Variant? params, Cancellable? cancellable) throws Error {
+        var timeout_id = Timeout.add (timeout_duration, () => {
+            warning ("Timeout on %s method call expired", method);
+
+            return false;
+        });
+
+        Variant? return_value;
+
+        try {
+            yield vls_client.call_async (method, params, cancellable, out return_value);
+        } catch (Error e) {
+            Source.remove (timeout_id);
+            throw e;
+        }
+
+        Source.remove (timeout_id);
+
+        return return_value;
+    }
+
+    private async void await_process_end () {
+        yield vls_server.wait_async ();
+        server_closed (vls_server.get_exit_status ());
+
+        if (exit_timeout_id != 0) {
+            Source.remove (exit_timeout_id);
+        }
+    }
+
+    public async void shutdown () throws Error {
+        yield call_method ("shutdown", null, null);
+    }
+
+    public async Json.Node initialize (Variant? capabilities) throws Error {
+        var result = yield call_method ("initialize", capabilities, null);
+        return Json.gvariant_serialize (result);
+    }
+
+    public void exit () {
+        vls_client.send_notification_async.begin ("exit", null, null);
+        exit_timeout_id = Timeout.add (3000, () => {
+            warning ("Language server didn't close after exit request, killing the process");
+            vls_server.force_exit ();
+
+            exit_timeout_id = 0;
+            return false;
+        });
+    }
+}
+}
