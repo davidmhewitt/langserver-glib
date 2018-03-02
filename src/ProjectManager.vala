@@ -301,4 +301,30 @@ public class Vls.ProjectManager : Object {
         rebuild_context ();
         generate_diagnostics ();
     }
+
+    public Gee.ArrayList<LanguageServer.Types.TextEdit> format_document (string uri) {
+        var changes = new Gee.ArrayList<LanguageServer.Types.TextEdit> ();
+
+        if (files.has_key (uri)) {
+            var lines = Regex.split_simple ("""\R""", files[uri].content);
+            var line_count = lines.length;
+            var char_count = lines[lines.length - 1].length;
+
+            changes.add (new LanguageServer.Types.TextEdit () {
+                range = new LanguageServer.Types.Range () {
+                    start = new LanguageServer.Types.Position () {
+                        line = 0,
+                        character = 0
+                    },
+                    end = new LanguageServer.Types.Position () {
+                        line = line_count - 1,
+                        character = char_count + 1
+                    }
+                },
+                newText = files[uri].content
+            });
+        }
+
+        return changes;
+    }
 }

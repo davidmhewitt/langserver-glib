@@ -40,8 +40,7 @@ public class Vls.Server : LanguageServer.Server {
     }
 
     protected override Gee.ArrayList<LanguageServer.Types.TextEdit> format_document (LanguageServer.Types.DocumentFormattingParams params) {
-        var changes = new Gee.ArrayList<LanguageServer.Types.TextEdit> ();
-        return changes;
+        return manager.format_document (params.textDocument.uri);
     }
 
     protected override void cleanup () {

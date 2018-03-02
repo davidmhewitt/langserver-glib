@@ -91,7 +91,7 @@ public class DocumentFormattingParams : Object {
     /**
      * The document to format.
      */
-    public string textDocument { get; set; }
+    public TextDocumentIdentifier textDocument { get; set; }
 
     /**
      * The format options.
@@ -245,6 +245,13 @@ public class VersionedTextDocumentIdentifier : Object {
     public int version { get; set; }
 }
 
+public class TextDocumentIdentifier : Object {
+    /**
+     * The text document's URI.
+     */
+    public string uri { get; set; }
+}
+
 
 /**
  * An event describing a change to a text document. If range and rangeLength are omitted
@@ -378,7 +385,7 @@ public class Position : Object {
     /**
      * Line position in a document (zero-based).
      */
-    public int line { get; set; }
+    public int line { get; set; default = -1; }
 
     /**
      * Character offset on a line in a document (zero-based). Assuming that the line is
@@ -388,7 +395,7 @@ public class Position : Object {
      * If the character value is greater than the line length it defaults back to the
      * line length.
      */
-    public int character { get; set; }
+    public int character { get; set; default = -1; }
 }
 
 public enum DiagnosticSeverity {
