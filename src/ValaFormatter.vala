@@ -951,8 +951,23 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 	public override void visit_expression_statement (Vala.ExpressionStatement stmt) {
 		write_indent ();
 		stmt.expression.accept (this);
+
+		bool has_lambda = false;
+		if (stmt.expression is Vala.MethodCall) {
+			var method = stmt.expression as Vala.MethodCall;
+			foreach (var arg in method.get_argument_list ()) {
+				if (arg is Vala.LambdaExpression) {
+					has_lambda = true;
+					break;
+				}
+			}
+		}
+
 		write_string (";");
 		write_newline ();
+		if (has_lambda) {
+			write_newline ();
+		}
 	}
 
 	public override void visit_if_statement (Vala.IfStatement stmt) {
