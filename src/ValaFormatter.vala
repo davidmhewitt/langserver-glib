@@ -581,6 +581,12 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 		write_string (" ");
 		write_identifier (f.name);
 		write_type_suffix (f.variable_type);
+
+		if (f.initializer != null) {
+			write_string (" = ");
+			f.initializer.accept (this);
+		}
+
 		write_string (";");
 		write_newline ();
 	}
