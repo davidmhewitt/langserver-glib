@@ -329,7 +329,7 @@ public class Vls.ProjectManager : Object {
             gir_parser.parse (context);
 
             var formatter = new ValaFormatter ();
-            formatter.write_file (context, "test.vala");
+            var output = formatter.format (context);
 
             Vala.CodeContext.pop ();
 
@@ -348,7 +348,7 @@ public class Vls.ProjectManager : Object {
                         character = char_count + 1
                     }
                 },
-                newText = file.content
+                newText = output
             });
         }
 

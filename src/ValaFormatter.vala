@@ -24,7 +24,7 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 
 	private Vala.CodeContext context;
 
-	FileStream stream;
+	StringBuilder stream;
 
 	int indent;
 	/* at begin of line */
@@ -36,27 +36,10 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 		this.spaces_instead_of_tabs = spaces_instead_of_tabs;
 	}
 
-	/**
-	 * Writes the public interface of the specified code context into the
-	 * specified file.
-	 *
-	 * @param context  a code context
-	 * @param filename a relative or absolute filename
-	 */
-	public void write_file (Vala.CodeContext context, string filename) {
-		var file_exists = FileUtils.test (filename, FileTest.EXISTS);
-		var temp_filename = "%s.valatmp".printf (filename);
+	public string format (Vala.CodeContext context) {
 		this.context = context;
 
-		if (file_exists) {
-			stream = FileStream.open (temp_filename, "w");
-		} else {
-			stream = FileStream.open (filename, "w");
-		}
-
-		if (stream == null) {
-			return;
-		}
+		stream = new StringBuilder ();
 
 		current_scope = context.root.scope;
 
@@ -64,33 +47,7 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 
 		current_scope = null;
 
-		stream = null;
-
-		if (file_exists) {
-			var changed = true;
-
-			try {
-				var old_file = new MappedFile (filename, false);
-				var new_file = new MappedFile (temp_filename, false);
-				var len = old_file.get_length ();
-				if (len == new_file.get_length ()) {
-					if (Memory.cmp (old_file.get_contents (), new_file.get_contents (), len) == 0) {
-						changed = false;
-					}
-				}
-				old_file = null;
-				new_file = null;
-			} catch (FileError e) {
-				// assume changed if mmap comparison doesn't work
-			}
-
-			if (changed) {
-				FileUtils.rename (temp_filename, filename);
-			} else {
-				FileUtils.unlink (temp_filename);
-			}
-		}
-
+		return stream.str;
 	}
 
 	public override void visit_using_directive (Vala.UsingDirective ns) {
@@ -989,6 +946,7 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 		write_indent ();
 		write_string ("}");
 		write_newline ();
+		write_newline ();
 	}
 
 	public override void visit_switch_section (Vala.SwitchSection section) {
@@ -1565,13 +1523,13 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 
 	private void write_indent () {
 		if (!bol) {
-			stream.putc ('\n');
+			stream.append_c ('\n');
 		}
 
 		if (spaces_instead_of_tabs) {
-			stream.puts (string.nfill (indent * 4, ' '));
+			stream.append (string.nfill (indent * 4, ' '));
 		} else {
-			stream.puts (string.nfill (indent, '\t'));
+			stream.append (string.nfill (indent, '\t'));
 		}
 
 		bol = false;
@@ -1609,7 +1567,7 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 		int id_length = (int)s.length;
 		if (Vala.Scanner.get_identifier_or_keyword (id, id_length) != Vala.TokenType.IDENTIFIER ||
 		    s.get_char ().isdigit ()) {
-			stream.putc ('@');
+			stream.append_c ('@');
 		}
 		write_string (s);
 	}
@@ -1636,12 +1594,12 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 	}
 
 	private void write_string (string s) {
-		stream.puts (s);
+		stream.append (s);
 		bol = false;
 	}
 
 	private void write_newline () {
-		stream.putc ('\n');
+		stream.append_c ('\n');
 		bol = true;
 	}
 
@@ -1656,11 +1614,11 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 
 	private void write_begin_block () {
 		if (!bol) {
-			stream.putc (' ');
+			stream.append_c (' ');
 		} else {
 			write_indent ();
 		}
-		stream.putc ('{');
+		stream.append_c ('{');
 		write_newline ();
 		indent++;
 	}
@@ -1668,7 +1626,7 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 	private void write_end_block () {
 		indent--;
 		write_indent ();
-		stream.putc ('}');
+		stream.append_c ('}');
 	}
 
 	private bool check_accessibility (Vala.Symbol sym) {
@@ -1725,9 +1683,9 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 				write_indent ();
 			}
 
-			stream.printf ("[%s", attr.name);
+			stream.append_printf ("[%s", attr.name);
 			if (keys.get_length () > 0) {
-				stream.puts (" (");
+				stream.append (" (");
 
 				unowned string separator = "";
 				var arg_iter = keys.get_begin_iter ();
@@ -1735,16 +1693,16 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 					unowned string arg_name = arg_iter.get ();
 					arg_iter = arg_iter.next ();
 					if (arg_name == "cheader_filename") {
-						stream.printf ("%scheader_filename = \"%s\"", separator, get_cheaders (sym));
+						stream.append_printf ("%scheader_filename = \"%s\"", separator, get_cheaders (sym));
 					} else {
-						stream.printf ("%s%s = %s", separator, arg_name, attr.args.get (arg_name));
+						stream.append_printf ("%s%s = %s", separator, arg_name, attr.args.get (arg_name));
 					}
 					separator = ", ";
 				}
 
-				stream.puts (")");
+				stream.append (")");
 			}
-			stream.puts ("]");
+			stream.append ("]");
 			if (node is Vala.Parameter || node is Vala.PropertyAccessor) {
 				write_string (" ");
 			} else {

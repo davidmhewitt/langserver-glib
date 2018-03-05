@@ -37,7 +37,7 @@ public class Vls.Linter : Object {
         parser.parse (context);
 
         var formatter = new ValaFormatter ();
-        formatter.write_file (context, "test.vala");
+        stdout.printf (formatter.format (context));
 
         Vala.CodeContext.pop ();
 
