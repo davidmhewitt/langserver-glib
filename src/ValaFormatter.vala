@@ -19,6 +19,7 @@
 
 public class Vls.ValaFormatter : Vala.CodeVisitor {
 	private bool spaces_instead_of_tabs = true;
+	private int tab_width = 4;
 
 	static GLib.Regex fix_indent_regex;
 
@@ -32,8 +33,9 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 
 	Vala.Scope current_scope;
 
-	public ValaFormatter (bool spaces_instead_of_tabs = true) {
+	public ValaFormatter (bool spaces_instead_of_tabs = true, int tab_width = 4) {
 		this.spaces_instead_of_tabs = spaces_instead_of_tabs;
+		this.tab_width = tab_width;
 	}
 
 	public string format (Vala.CodeContext context) {
@@ -1527,7 +1529,7 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 		}
 
 		if (spaces_instead_of_tabs) {
-			stream.append (string.nfill (indent * 4, ' '));
+			stream.append (string.nfill (indent * tab_width, ' '));
 		} else {
 			stream.append (string.nfill (indent, '\t'));
 		}
@@ -1543,7 +1545,12 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 			assert_not_reached ();
 		}
 
-		string replacement = "\n%s ".printf (string.nfill (indent, '\t'));
+		string replacement = "";
+		if (spaces_instead_of_tabs) {
+			replacement = "\n%s ".printf (string.nfill (indent * tab_width, ' '));
+		} else {
+			replacement = "\n%s ".printf (string.nfill (indent, '\t'));
+		}
 		string fixed_content;
 		try {
 			fixed_content = fix_indent_regex.replace (comment.content, comment.content.length, 0, replacement);
