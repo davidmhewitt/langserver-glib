@@ -4,6 +4,7 @@ code_files = files(
     'ProjectManager.vala',
     'Reporter.vala',
     'Server.vala',
+    'ValaFormatter.vala'
 )
 
 executable(

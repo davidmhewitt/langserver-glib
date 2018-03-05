@@ -306,7 +306,34 @@ public class Vls.ProjectManager : Object {
         var changes = new Gee.ArrayList<LanguageServer.Types.TextEdit> ();
 
         if (files.has_key (uri)) {
-            var lines = Regex.split_simple ("""\R""", files[uri].content);
+            var file = files[uri];
+
+            context = new Vala.CodeContext ();
+
+            Vala.CodeContext.push (context);
+            context.report = new Reporter ();
+            context.profile = Vala.Profile.GOBJECT;
+            context.vapi_comments = true;
+
+            context.add_source_file (file);
+
+            file.get_nodes ().clear ();
+
+            var parser = new Vala.Parser ();
+            parser.parse (context);
+
+    		var genie_parser = new Vala.Genie.Parser ();
+    		genie_parser.parse (context);
+
+    		var gir_parser = new Vala.GirParser ();
+            gir_parser.parse (context);
+
+            var formatter = new ValaFormatter ();
+            formatter.write_file (context, "test.vala");
+
+            Vala.CodeContext.pop ();
+
+            var lines = Regex.split_simple ("""\R""", file.content);
             var line_count = lines.length;
             var char_count = lines[lines.length - 1].length;
 
@@ -321,7 +348,7 @@ public class Vls.ProjectManager : Object {
                         character = char_count + 1
                     }
                 },
-                newText = files[uri].content
+                newText = file.content
             });
         }
 
