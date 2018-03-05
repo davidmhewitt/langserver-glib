@@ -77,7 +77,6 @@ public class Vls.BuildSystemAnalyzer : Object {
         var meson = new SubprocessLauncher (SubprocessFlags.STDOUT_PIPE);
         meson.set_cwd (meson_build_root);
         var proc = meson.spawnv ({ "meson", "introspect", "--dependencies" });
-        var pipe = proc.get_stdout_pipe ();
         Bytes output;
         yield proc.communicate_async (null, null, out output, null);
 

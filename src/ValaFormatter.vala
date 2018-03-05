@@ -225,25 +225,41 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 		visit_sorted (cl.get_classes ());
 		visit_sorted (cl.get_structs ());
 		visit_sorted (cl.get_enums ());
-		visit_sorted (cl.get_constants ());
-		visit_sorted (cl.get_fields ());
-		visit_sorted (cl.get_properties ());
-		visit_sorted (cl.get_signals ());
 		visit_sorted (cl.get_delegates ());
 
-		if (cl.constructor != null && cl.constructor.body != null) {
-			cl.constructor.accept (this);
+		bool consts_found = false;
+		foreach (var member in cl.get_members ()) {
+			if (member is Vala.Constant) {
+				consts_found = true;
+				break;
+			}
 		}
 
-		if (cl.class_constructor != null && cl.class_constructor.body != null) {
-			cl.class_constructor.accept (this);
+		if (!consts_found) {
+			visit_sorted (cl.get_constants ());
 		}
 
-		if (cl.static_constructor != null && cl.static_constructor.body != null) {
-			cl.static_constructor.accept (this);
-		}
+		bool constructors_inserted = false;
+		foreach (var member in cl.get_members ()) {
+			if (!constructors_inserted && member is Vala.Method) {
+				if (cl.constructor != null && cl.constructor.body != null) {
+					write_newline ();
+				 	cl.constructor.accept (this);
+				}
 
-		visit_sorted (cl.get_methods ());
+				if (cl.class_constructor != null && cl.class_constructor.body != null) {
+					cl.class_constructor.accept (this);
+				}
+
+				if (cl.static_constructor != null && cl.static_constructor.body != null) {
+					cl.static_constructor.accept (this);
+				}
+
+				constructors_inserted = true;
+			}
+
+			member.accept (this);
+		}
 
 		current_scope = current_scope.parent_scope;
 
