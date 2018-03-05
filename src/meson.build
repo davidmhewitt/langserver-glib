@@ -13,3 +13,14 @@ executable(
     dependencies: [langserver_dep, dependencies],
     install: true,
 )
+
+linter_files = files(
+    'linter/Application.vala',
+    'ValaFormatter.vala'
+)
+
+executable(
+    'com.github.davidmhewitt.vala-lint',
+    linter_files,
+    dependencies: dependencies
+)

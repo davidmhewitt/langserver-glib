@@ -226,18 +226,9 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 		visit_sorted (cl.get_structs ());
 		visit_sorted (cl.get_enums ());
 		visit_sorted (cl.get_delegates ());
-
-		bool consts_found = false;
-		foreach (var member in cl.get_members ()) {
-			if (member is Vala.Constant) {
-				consts_found = true;
-				break;
-			}
-		}
-
-		if (!consts_found) {
-			visit_sorted (cl.get_constants ());
-		}
+		write_newline ();
+		visit_sorted (cl.get_constants ());
+		write_newline ();
 
 		bool constructors_inserted = false;
 		foreach (var member in cl.get_members ()) {
