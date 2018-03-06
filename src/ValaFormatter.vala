@@ -1487,9 +1487,9 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 
 	public override void visit_conditional_expression (Vala.ConditionalExpression expr) {
 		expr.condition.accept (this);
-		write_string ("?");
+		write_string (" ? ");
 		expr.true_expression.accept (this);
-		write_string (":");
+		write_string (" : ");
 		expr.false_expression.accept (this);
 	}
 
