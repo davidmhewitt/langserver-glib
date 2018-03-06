@@ -49,7 +49,10 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 
 		current_scope = null;
 
-		return stream.str;
+		var result = stream.str;
+		var fix_blank_lines_regex = new Regex ("""\n\n(?=\s*})""");
+		result = fix_blank_lines_regex.replace (result, -1, 0, "\n");
+		return result;
 	}
 
 	public override void visit_using_directive (Vala.UsingDirective ns) {
