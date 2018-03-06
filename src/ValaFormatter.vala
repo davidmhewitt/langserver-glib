@@ -930,9 +930,24 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 		write_string (")");
 		stmt.true_statement.accept (this);
 		if (stmt.false_statement != null) {
-			write_string (" else");
-			stmt.false_statement.accept (this);
+			var statements = stmt.false_statement.get_statements ();
+			if (statements.size == 1 && statements[0] is Vala.IfStatement) {
+				var sub_if = statements[0] as Vala.IfStatement;
+				write_string (" else if (");
+				sub_if.condition.accept (this);
+				write_string (")");
+				sub_if.true_statement.accept (this);
+
+				if (sub_if.false_statement != null) {
+					write_string (" else");
+					sub_if.false_statement.accept (this);
+				}
+			} else {
+				write_string (" else");
+				stmt.false_statement.accept (this);
+			}
 		}
+
 		write_newline ();
 		write_newline ();
 	}
