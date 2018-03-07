@@ -17,13 +17,7 @@
 * along with VLS.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-public class Vls.BuildSystemAnalyzer : Object {
-
-    public enum BuildSystemType {
-        MESON,
-        CMAKE,
-        OTHER
-    }
+public class Vls.MesonAnalyzer : Object, ProjectAnalyzer {
 
     public string root_uri { get; construct; }
 
@@ -38,28 +32,22 @@ public class Vls.BuildSystemAnalyzer : Object {
         }
     }
 
-    public BuildSystemType system_type { get; set; }
-
-    public signal void dependencies_detected (Gee.ArrayList<string> deps);
-    public signal void build_files_detected (Gee.ArrayList<string> files);
-
     private string meson_build_root;
 
-    public BuildSystemAnalyzer (string root_uri) {
+    public MesonAnalyzer (string root_uri) {
         Object (root_uri: root_uri);
     }
 
-    construct {
-        system_type = BuildSystemType.OTHER;
-
+    public bool detected () {
         var dir = File.new_for_uri (root_uri);
         var meson = dir.get_child ("meson.build");
 
         if (meson.query_exists ()) {
-            system_type = BuildSystemType.MESON;
-
             init_meson (meson);
+            return true;
         }
+
+        return false;
     }
 
     private void init_meson (File build_file) {
@@ -87,7 +75,7 @@ public class Vls.BuildSystemAnalyzer : Object {
             dep_list.add (element.get_object ().get_string_member ("name"));
         });
 
-        dependencies_detected (dep_list);
+        dependencies_updated (dep_list);
     }
 
     private async void introspect_target_files () {
@@ -142,7 +130,7 @@ public class Vls.BuildSystemAnalyzer : Object {
         }
 
         if (target_found) {
-            build_files_detected (current_file_list);
+            build_files_updated (current_file_list);
         }
     }
 }

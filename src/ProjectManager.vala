@@ -26,7 +26,7 @@ public class Vls.ProjectManager : Object {
     private Gee.HashMap<string, int> versions;
     private Gee.HashSet<string> dependencies;
 
-    private BuildSystemAnalyzer build_system;
+    private ProjectAnalyzer build_system;
     private Vala.CodeContext context;
 
     construct {
@@ -38,9 +38,18 @@ public class Vls.ProjectManager : Object {
         dependencies.add ("glib-2.0");
         dependencies.add ("gobject-2.0");
 
-        build_system = new BuildSystemAnalyzer (root_uri);
-        build_system.dependencies_detected.connect (on_dependencies_updated);
-        build_system.build_files_detected.connect (on_files_updated);
+        var analyzers = new Gee.ArrayList <ProjectAnalyzer> ();
+        analyzers.add (new ValaProjectAnalyzer (root_uri));
+        analyzers.add (new MesonAnalyzer (root_uri));
+
+        foreach (var analyzer in analyzers) {
+            if (analyzer.detected ()) {
+                build_system = analyzer;
+                build_system.dependencies_updated.connect (on_dependencies_updated);
+                build_system.build_files_updated.connect (on_files_updated);
+                break;
+            }
+        }
     }
 
     public ProjectManager (string root_uri) {

@@ -1136,10 +1136,13 @@ public class Vls.ValaFormatter : Vala.CodeVisitor {
 		foreach (var clause in stmt.get_catch_clauses ()) {
 			clause.accept (this);
 		}
+		
 		if (stmt.finally_body != null) {
 			write_string (" finally");
 			stmt.finally_body.accept (this);
 		}
+
+		write_newline ();
 		write_newline ();
 	}
 

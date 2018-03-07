@@ -1,10 +1,12 @@
 code_files = files(
     'Application.vala',
-    'BuildSystemAnalyzer.vala',
     'ProjectManager.vala',
     'Reporter.vala',
     'Server.vala',
-    'ValaFormatter.vala'
+    'ValaFormatter.vala',
+    'ProjectAnalyzers/AbstractProjectAnalyzer.vala',
+    'ProjectAnalyzers/MesonAnalyzer.vala',
+    'ProjectAnalyzers/ValaProjectAnalyzer.vala'
 )
 
 executable(
