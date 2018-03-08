@@ -29,6 +29,9 @@ public class Vls.ProjectManager : Object {
     private ProjectAnalyzer build_system;
     private Vala.CodeContext context;
 
+    private CompileJob? current_compile_job = null;
+    private CompileJob? next_compile_job = null;
+
     construct {
         debug ("Project manager initializing with %s", root_uri);
         files = new Gee.HashMap<string, Vala.SourceFile> ();
@@ -74,7 +77,6 @@ public class Vls.ProjectManager : Object {
 
         if (adding_new) {
             rebuild_context ();
-            generate_diagnostics ();
 
             build_system.pivot_file = item.uri;
         }
@@ -101,105 +103,43 @@ public class Vls.ProjectManager : Object {
             }
 
             rebuild_context ();
-            generate_diagnostics ();
 
             build_system.pivot_file = uri;
         }
     }
 
     public void rebuild_context () {
-        context = new Vala.CodeContext ();
-
-        Vala.CodeContext.push (context);
-        context.report = new Reporter ();
-        context.profile = Vala.Profile.GOBJECT;
-
-        foreach (var dep in dependencies) {
-            debug ("adding dep %s", dep);
-            context.add_external_package (dep);
+        if (current_compile_job == null) {
+            current_compile_job = new CompileJob (root_uri, files, dependencies);
+            current_compile_job.execute.begin ((obj, res) => {
+                var diags = current_compile_job.execute.end (res);
+                handle_diagnostics (diags);
+                handle_job_finished ();
+            });
+        } else {
+            next_compile_job = new CompileJob (root_uri, files, dependencies);
+            current_compile_job.cancel ();
         }
-
-        for (int i = 2; i <= 40; i += 2) {
-			context.add_define ("VALA_0_%d".printf (i));
-		}
-
-		context.target_glib_major = 2;
-		context.target_glib_minor = 40;
-
-		for (int i = 16; i <= 40; i += 2) {
-			context.add_define ("GLIB_2_%d".printf (i));
-        }
-
-        context.nostdpkg = false;
-
-        foreach (var file in files.values) {
-            debug ("building with %s", file.filename);
-            file.context = context;
-
-            var ns_ref = new Vala.UsingDirective (new Vala.UnresolvedSymbol (null, "GLib", null));
-            Vala.UsingDirective? glib_dep = null;
-
-            foreach (var using in file.current_using_directives) {
-                if (using.namespace_symbol.name == "GLib") {
-                    glib_dep = using;
-                    break;
-                }
-            }
-
-            if (glib_dep != null) {
-                file.current_using_directives.remove (glib_dep);
-                glib_dep = null;
-            }
-
-            if (glib_dep == null) {
-                file.add_using_directive (ns_ref);
-                context.root.add_using_directive (ns_ref);
-            }
-
-            context.add_source_file (file);
-
-            // clear all code nodes from file
-            file.get_nodes ().clear ();
-        }
-
-        if (context.report.get_errors () > 0) {
-            Vala.CodeContext.pop ();
-            return;
-        }
-
-        debug ("No initial errors, parsing");
-        var parser = new Vala.Parser ();
-        parser.parse (context);
-
-		var genie_parser = new Vala.Genie.Parser ();
-		genie_parser.parse (context);
-
-		var gir_parser = new Vala.GirParser ();
-        gir_parser.parse (context);
-
-        if (context.report.get_errors () > 0) {
-            debug ("errors in parse");
-            Vala.CodeContext.pop ();
-            return;
-        }
-
-        context.check ();
-
-        Vala.CodeContext.pop ();
     }
 
-    public void generate_diagnostics () {
-        var diagnostics = new Gee.HashMap<string, LanguageServer.Types.PublishDiagnosticsParams> ();
+    private void handle_job_finished () {
+        current_compile_job = null;
 
-        (context.report as Reporter).error_list.foreach (err => {
-            add_error_to_map (ref diagnostics, err, LanguageServer.Types.DiagnosticSeverity.Error);
-            return true;
-        });
+        if (next_compile_job != null) {
+            current_compile_job = next_compile_job;
+            next_compile_job = null;
+            current_compile_job.execute.begin ((obj, res) => {
+                var diags = current_compile_job.execute.end (res);
+                handle_diagnostics (diags);
+                handle_job_finished ();
+            });
+        }
+    }
 
-        (context.report as Reporter).warning_list.foreach (err => {
-            add_error_to_map (ref diagnostics, err, LanguageServer.Types.DiagnosticSeverity.Warning);
-            return true;
-        });
+    public void handle_diagnostics (Gee.HashMap<string, LanguageServer.Types.PublishDiagnosticsParams>? diagnostics) {
+        if (diagnostics == null) {
+            return;
+        }
 
         foreach (var file in files.keys) {
             if (!diagnostics.has_key (file)) {
@@ -221,49 +161,6 @@ public class Vls.ProjectManager : Object {
         publish_diagnostics (diagnostics);
     }
 
-    private void add_error_to_map (ref Gee.HashMap<string, LanguageServer.Types.PublishDiagnosticsParams> diagnostics,
-                                   SourceError err,
-                                   LanguageServer.Types.DiagnosticSeverity severity) {
-
-        if (!(root_uri in err.location.file.filename)) {
-            return;
-        }
-
-        if (!diagnostics.has_key (err.location.file.filename)) {
-            diagnostics[err.location.file.filename] = new LanguageServer.Types.PublishDiagnosticsParams () {
-                uri = err.location.file.filename,
-                diagnostics = new Gee.ArrayList<LanguageServer.Types.Diagnostic> ()
-            };
-        }
-
-        var start_line = err.location.begin.line - 1;
-        if (start_line < 0) start_line = 0;
-
-        var start_char = err.location.begin.column - 1;
-        if (start_char < 0) start_char = 0;
-
-        var end_line = err.location.end.line - 1;
-        if (end_line < 0) end_line = 0;
-
-        var diagnostic = new LanguageServer.Types.Diagnostic () {
-            severity = severity,
-            source = "VLS",
-            message = err.message,
-            range = new LanguageServer.Types.Range () {
-                start = new LanguageServer.Types.Position () {
-                    line = start_line,
-                    character = start_char
-                },
-                end = new LanguageServer.Types.Position () {
-                    line = end_line,
-                    character = err.location.end.column
-                }
-            }
-        };
-
-        diagnostics[err.location.file.filename].diagnostics.add (diagnostic);
-    }
-
     private void on_dependencies_updated (Gee.ArrayList<string> new_deps) {
         debug ("deps updated");
 
@@ -276,7 +173,6 @@ public class Vls.ProjectManager : Object {
         }
 
         rebuild_context ();
-        generate_diagnostics ();
     }
 
     private void on_files_updated (Gee.ArrayList<string> new_files) {
@@ -308,7 +204,6 @@ public class Vls.ProjectManager : Object {
         }
 
         rebuild_context ();
-        generate_diagnostics ();
     }
 
     public Gee.ArrayList<LanguageServer.Types.TextEdit> format_document (string uri) {

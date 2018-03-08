@@ -1,5 +1,6 @@
 code_files = files(
     'Application.vala',
+    'CompileJob.vala',
     'ProjectManager.vala',
     'Reporter.vala',
     'Server.vala',
