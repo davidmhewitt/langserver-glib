@@ -44,6 +44,7 @@ public class Vls.ProjectManager : Object {
         var analyzers = new Gee.ArrayList <ProjectAnalyzer> ();
         analyzers.add (new ValaProjectAnalyzer (root_uri));
         analyzers.add (new MesonAnalyzer (root_uri));
+        analyzers.add (new CMakeAnalyzer (root_uri));
 
         foreach (var analyzer in analyzers) {
             if (analyzer.detected ()) {

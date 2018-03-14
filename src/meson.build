@@ -6,6 +6,7 @@ code_files = files(
     'Server.vala',
     'ValaFormatter.vala',
     'ProjectAnalyzers/AbstractProjectAnalyzer.vala',
+    'ProjectAnalyzers/CMakeProjectAnalyzer.vala',
     'ProjectAnalyzers/MesonAnalyzer.vala',
     'ProjectAnalyzers/ValaProjectAnalyzer.vala'
 )
