@@ -23,6 +23,7 @@ public class Client : Object {
     public uint timeout_duration { get; construct; }
 
     public signal void server_closed (int exit_code);
+    public signal void diagnostics_published (string uri, Gee.ArrayList<Types.Diagnostic> diagnostics);
 
     private Jsonrpc.Client vls_client;
     private Subprocess vls_server;
@@ -33,11 +34,30 @@ public class Client : Object {
         var stream = new SimpleIOStream (vls_server.get_stdout_pipe (), vls_server.get_stdin_pipe ());
 
         vls_client = new Jsonrpc.Client (stream);
+        vls_client.notification.connect (handle_notification);
         await_process_end.begin ();
     }
 
     public Client (string server_path, uint timeout_duration = 3000) {
         Object (server_path: server_path, timeout_duration: timeout_duration);
+    }
+    
+    private void handle_notification (Jsonrpc.Client client, string method, Variant? params) {
+        switch (method) {
+            case "textDocument/publishDiagnostics":
+                if (params != null) {
+                    var data = Json.gvariant_serialize (params);
+                    var item = Json.gobject_deserialize (typeof (Types.PublishDiagnosticsParams), data)
+                               as Types.PublishDiagnosticsParams;
+
+                    diagnostics_published (item.uri, item.diagnostics);
+                }
+
+                break;
+            default:
+                debug (@"No handler for: $method");
+                break;
+        }
     }
 
     private async Variant? call_method (string method, Variant? params, Cancellable? cancellable) throws Error {
@@ -74,9 +94,17 @@ public class Client : Object {
         yield call_method ("shutdown", null, null);
     }
 
-    public async Json.Node initialize (Variant? capabilities) throws Error {
+    public async Types.ServerCapabilities? initialize (Variant? capabilities) throws Error {
         var result = yield call_method ("initialize", capabilities, null);
-        return Json.gvariant_serialize (result);
+        if (result != null) {
+            var data = Json.gvariant_serialize (result);
+            var item = Json.gobject_deserialize (typeof (Types.InitializeResult), data)
+                       as Types.InitializeResult;
+                       
+            return item.capabilities;
+        }
+
+        return null;
     }
 
     public void exit () {
