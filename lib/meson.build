@@ -8,7 +8,8 @@ code_files = files(
 langserver_lib = library(
     meson.project_name (),
     code_files,
-    dependencies: dependencies
+    dependencies: dependencies,
+    install: true
 )
 
 langserver_include = include_directories('../lib')
