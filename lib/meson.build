@@ -6,7 +6,7 @@ code_files = files(
 )
 
 langserver_lib = library(
-    'langserver-glib',
+    meson.project_name (),
     code_files,
     dependencies: dependencies
 )

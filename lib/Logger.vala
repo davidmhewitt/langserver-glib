@@ -1,20 +1,20 @@
 /*
 * Copyright (c) 2018 David Hewitt (https://github.com/davidmhewitt)
 *
-* This file is part of Vala Language Server (VLS).
+* This file is part of GLib Language Server.
 *
-* VLS is free software: you can redistribute it and/or modify
+* GLib Language Server is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* VLS is distributed in the hope that it will be useful,
+* GLib Language Server is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with VLS.  If not, see <http://www.gnu.org/licenses/>.
+* along with GLib Language Server.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 namespace LanguageServer {
@@ -25,7 +25,7 @@ public class Logger : Object {
     FileStream log_file;
 
     construct {
-        log_file = FileStream.open (@"$(Environment.get_tmp_dir())/vls-$(new DateTime.now_local()).log", "a");
+        log_file = FileStream.open (@"$(Environment.get_tmp_dir())/langserver-glib-$(new DateTime.now_local()).log", "a");
     }
 
     private void log (string? domain, LogLevelFlags level, string message) {

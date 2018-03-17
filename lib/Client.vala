@@ -1,20 +1,20 @@
 /*
 * Copyright (c) 2018 David Hewitt (https://github.com/davidmhewitt)
 *
-* This file is part of Vala Language Server (VLS).
+* This file is part of GLib Language Server.
 *
-* VLS is free software: you can redistribute it and/or modify
+* GLib Language Server is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* VLS is distributed in the hope that it will be useful,
+* GLib Language Server is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with VLS.  If not, see <http://www.gnu.org/licenses/>.
+* along with GLib Language Server.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 namespace LanguageServer {
@@ -41,7 +41,7 @@ public class Client : Object {
     public Client (string server_path, uint timeout_duration = 3000) {
         Object (server_path: server_path, timeout_duration: timeout_duration);
     }
-    
+
     private void handle_notification (Jsonrpc.Client client, string method, Variant? params) {
         switch (method) {
             case "textDocument/publishDiagnostics":
@@ -97,13 +97,13 @@ public class Client : Object {
     public async Types.ServerCapabilities? initialize (Types.InitializeParams params) throws Error {
         var node = Json.gobject_serialize (params);
         var capabilities = Json.gvariant_deserialize (node, null);
-        
+
         var result = yield call_method ("initialize", capabilities, null);
         if (result != null) {
             var data = Json.gvariant_serialize (result);
             var item = Json.gobject_deserialize (typeof (Types.InitializeResult), data)
                        as Types.InitializeResult;
-                       
+
             return item.capabilities;
         }
 

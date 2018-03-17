@@ -1,7 +1,17 @@
+server_files = files(
+    'DummyServer.vala'
+)
+
+server_exec = executable(
+    'dummy-server',
+    server_files,
+    dependencies: [langserver_dep, dependencies]
+)
+
 code_files = files(
     'ExitTest.vala',
     'InitializeTest.vala',
-    'VlsTest.vala'
+    'BaseTest.vala'
 )
 
 test_exec = executable(
