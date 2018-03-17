@@ -49,7 +49,8 @@ public class InitializeTest : VlsTest {
                 loop.quit ();
             });
 
-            client.initialize.begin (new Variant ("a{sv}"), (o, res) => {
+            var initialize_params = new LanguageServer.Types.InitializeParams ();
+            client.initialize.begin (initialize_params, (o, res) => {
                 try {
                     client.initialize.end (res);
                 } catch (Error e) {
@@ -70,7 +71,8 @@ public class InitializeTest : VlsTest {
                 loop.quit ();
             });
 
-            client.initialize.begin (new Variant ("a{sv}"), (o, res) => {
+            var initialize_params = new LanguageServer.Types.InitializeParams ();
+            client.initialize.begin (initialize_params, (o, res) => {
                 try {
                     var response = client.initialize.end (res);
                     assert (response != null);

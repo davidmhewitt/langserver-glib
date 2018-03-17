@@ -94,7 +94,10 @@ public class Client : Object {
         yield call_method ("shutdown", null, null);
     }
 
-    public async Types.ServerCapabilities? initialize (Variant? capabilities) throws Error {
+    public async Types.ServerCapabilities? initialize (Types.InitializeParams params) throws Error {
+        var node = Json.gobject_serialize (params);
+        var capabilities = Json.gvariant_deserialize (node, null);
+        
         var result = yield call_method ("initialize", capabilities, null);
         if (result != null) {
             var data = Json.gvariant_serialize (result);
