@@ -341,6 +341,29 @@ public class PublishDiagnosticsParams : Object, Json.Serializable {
     }
 
     public bool deserialize_property (string property_name, out Value @value, ParamSpec pspec, Json.Node property_node) {
+        if (property_name == "diagnostics") {
+            var node = property_node.get_array ();
+            if (node != null) {
+                var arraylist = new Gee.ArrayList<Object> ();
+                node.foreach_element ((arr, i, change) => {
+                    var new_change = Json.gobject_deserialize (typeof (Diagnostic), change);
+                    arraylist.add (new_change);
+                });
+
+                @value = Value (typeof (Gee.ArrayList<Object>));
+                @value.set_object (arraylist);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        if (property_name == "uri") {
+            @value = Value (typeof (string));
+            @value.set_string (property_node.get_string ());
+            return true;
+        }
+
 		return default_deserialize_property (property_name, out @value, pspec, property_node);
     }
 }
