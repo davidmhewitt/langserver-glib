@@ -121,6 +121,13 @@ public class Client : Object {
         vls_client.send_notification_async.begin ("textDocument/didOpen", didopen_params, null);
     }
 
+    public async void did_change (Types.DidChangeTextDocumentParams params) {
+        var node = Json.gobject_serialize (params);
+        var didchange_params = Json.gvariant_deserialize (node, null);
+
+        vls_client.send_notification_async.begin ("textDocument/didChange", didchange_params, null);
+    }
+
     public void exit () {
         vls_client.send_notification_async.begin ("exit", null, null);
         exit_timeout_id = Timeout.add (3000, () => {
