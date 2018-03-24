@@ -26,7 +26,8 @@ public abstract class Server : Object {
     protected abstract void did_open (Types.TextDocumentItem document);
     protected abstract void did_change (Types.DidChangeTextDocumentParams params);
     protected abstract void initialize (Types.InitializeParams init_params);
-    protected abstract Gee.ArrayList<Types.TextEdit> format_document (Types.DocumentFormattingParams format_params);
+    protected virtual Gee.ArrayList<Types.TextEdit>? format_document (Types.DocumentFormattingParams format_params) { return null; }
+    protected virtual Types.Position? get_definition (Types.TextDocumentPositionParams definition_params) {return null; }
     protected abstract void cleanup ();
 
     private Jsonrpc.Server server;
@@ -123,6 +124,11 @@ public abstract class Server : Object {
                                     as Types.DocumentFormattingParams;
 
                 var result = format_document (format_params);
+                if (result == null) {
+                    client.reply (id, null, null);
+                    return true;
+                }
+
                 var array = new Json.Array.sized (result.size);
 
                 foreach (var item in result) {
@@ -132,6 +138,20 @@ public abstract class Server : Object {
                 var node = new Json.Node (Json.NodeType.ARRAY);
                 node.set_array (array);
 
+                client.reply (id, Json.gvariant_deserialize (node, null), null);
+                return true;
+            case "textDocument/definition":
+                var data = Json.gvariant_serialize (params);
+                var definition_params = Json.gobject_deserialize (typeof (Types.TextDocumentPositionParams), data)
+                                        as Types.TextDocumentPositionParams;
+
+                var result = get_definition (definition_params);
+                if (result == null) {
+                    client.reply (id, null, null);
+                    return true;
+                }
+
+                var node = Json.gobject_serialize (result);
                 client.reply (id, Json.gvariant_deserialize (node, null), null);
                 return true;
             default:

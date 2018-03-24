@@ -54,8 +54,5 @@ public class DummyServer : LanguageServer.Server {
     protected override void initialize (LanguageServer.Types.InitializeParams init_params) {}
     protected override void did_open (LanguageServer.Types.TextDocumentItem document) {}
     protected override void did_change (LanguageServer.Types.DidChangeTextDocumentParams params) {}
-    protected override Gee.ArrayList<LanguageServer.Types.TextEdit> format_document (LanguageServer.Types.DocumentFormattingParams params) {
-        return new Gee.ArrayList<LanguageServer.Types.TextEdit> ();
-    }
     protected override void cleanup () {}
 }

@@ -421,6 +421,11 @@ public class Position : Object {
     public int character { get; set; default = -1; }
 }
 
+public class TextDocumentPositionParams : Object {
+    public TextDocumentIdentifier textDocument { get; set; }
+    public Position position { get; set; }
+}
+
 public enum DiagnosticSeverity {
     Unset = -1,
 
