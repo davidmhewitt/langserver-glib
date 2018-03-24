@@ -85,6 +85,11 @@ public class ServerCapabilities : Object {
 	 * The server provides document formatting.
 	 */
     public bool documentFormattingProvider { get; set; }
+
+    /**
+	 * The server provides goto definition support.
+	 */
+	public bool definitionProvider { get; set; }
 }
 
 public class DocumentFormattingParams : Object {
