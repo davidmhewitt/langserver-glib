@@ -21,6 +21,7 @@ namespace LanguageServer {
 
 public abstract class Server : Object {
     public bool supports_document_formatting { get; construct; default = false; }
+    public bool supports_goto_definition { get; construct; default = false; }
 
     public signal void exit (int return_code);
     protected abstract void did_open (Types.TextDocumentItem document);
@@ -73,7 +74,8 @@ public abstract class Server : Object {
                         includeText = false
                     }
                 },
-                documentFormattingProvider = supports_document_formatting
+                documentFormattingProvider = supports_document_formatting,
+                definitionProvider = supports_goto_definition
             }
         };
 
