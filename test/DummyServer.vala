@@ -44,13 +44,6 @@ public class Application : Object {
 }
 
 public class DummyServer : LanguageServer.Server {
-
-    public DummyServer () {
-        Object (
-            supports_document_formatting: true
-        );
-    }
-
     protected override void initialize (LanguageServer.Types.InitializeParams init_params) {}
     protected override void did_open (LanguageServer.Types.TextDocumentItem document) {}
     protected override void did_change (LanguageServer.Types.DidChangeTextDocumentParams params) {}
