@@ -426,6 +426,11 @@ public class Position : Object {
     public int character { get; set; default = -1; }
 }
 
+public class Location : Object {
+    public string uri { get; set; }
+    public Range range { get; set; }
+}
+
 public class TextDocumentPositionParams : Object {
     public TextDocumentIdentifier textDocument { get; set; }
     public Position position { get; set; }

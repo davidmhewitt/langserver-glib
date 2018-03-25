@@ -28,7 +28,7 @@ public abstract class Server : Object {
     protected abstract void did_change (Types.DidChangeTextDocumentParams params);
     protected abstract void initialize (Types.InitializeParams init_params);
     protected virtual Gee.ArrayList<Types.TextEdit>? format_document (Types.DocumentFormattingParams format_params) { return null; }
-    protected virtual Types.Position? get_definition (Types.TextDocumentPositionParams definition_params) {return null; }
+    protected virtual Types.Location? get_definition (Types.TextDocumentPositionParams definition_params) {return null; }
     protected abstract void cleanup ();
 
     private Jsonrpc.Server server;

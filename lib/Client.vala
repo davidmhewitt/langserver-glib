@@ -110,15 +110,15 @@ public class Client : Object {
         return null;
     }
 
-    public async Types.Position? locate_definition (Types.TextDocumentPositionParams params) {
+    public async Types.Location? locate_definition (Types.TextDocumentPositionParams params) {
         var node = Json.gobject_serialize (params);
         var definition_params = Json.gvariant_deserialize (node, null);
 
         var result = yield call_method ("textDocument/definition", definition_params, null);
         if (result != null) {
             var data = Json.gvariant_serialize (result);
-            var item = Json.gobject_deserialize (typeof (Types.Position), data)
-                       as Types.Position;
+            var item = Json.gobject_deserialize (typeof (Types.Location), data)
+                       as Types.Location;
 
             return item;
         }
