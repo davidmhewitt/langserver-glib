@@ -20,7 +20,7 @@
 namespace LanguageServer {
 public class Client : Object {
     public string server_path { get; construct; }
-    public uint timeout_duration { get; construct; }
+    public uint timeout_duration { get; construct; default = 3000; }
 
     public signal void server_closed (int exit_code);
     public signal void diagnostics_published (string uri, Gee.ArrayList<Types.Diagnostic> diagnostics);
@@ -28,8 +28,11 @@ public class Client : Object {
     private Jsonrpc.Client vls_client;
     private Subprocess vls_server;
     private uint exit_timeout_id = 0;
+    private bool file_pipes = false;
 
-    construct {
+    public Client (string server_path, uint timeout_duration = 3000) {
+        Object (timeout_duration: timeout_duration);
+
         vls_server = new Subprocess (SubprocessFlags.STDIN_PIPE | SubprocessFlags.STDOUT_PIPE, server_path);
         var stream = new SimpleIOStream (vls_server.get_stdout_pipe (), vls_server.get_stdin_pipe ());
 
@@ -38,8 +41,19 @@ public class Client : Object {
         await_process_end.begin ();
     }
 
-    public Client (string server_path, uint timeout_duration = 3000) {
-        Object (server_path: server_path, timeout_duration: timeout_duration);
+    public Client.from_file_pipes (string stdin, string stdout) {
+        file_pipes = true;
+
+        var stdout_fd = Posix.open (stdout, Posix.O_NONBLOCK);
+        var stdout_is = new UnixInputStream (stdout_fd, false);
+
+        var stdin_fd = Posix.open (stdin, Posix.O_RDWR);
+        var stdin_os = new UnixOutputStream (stdin_fd, false);
+
+        var stream = new SimpleIOStream (stdout_is, stdin_os);
+
+        vls_client = new Jsonrpc.Client (stream);
+        vls_client.notification.connect (handle_notification);
     }
 
     private void handle_notification (Jsonrpc.Client client, string method, Variant? params) {
@@ -146,13 +160,18 @@ public class Client : Object {
 
     public void exit () {
         vls_client.send_notification_async.begin ("exit", null, null);
-        exit_timeout_id = Timeout.add (3000, () => {
-            warning ("Language server didn't close after exit request, killing the process");
-            vls_server.force_exit ();
 
-            exit_timeout_id = 0;
-            return false;
-        });
+        if (!file_pipes) {
+            exit_timeout_id = Timeout.add (3000, () => {
+                warning ("Language server didn't close after exit request, killing the process");
+                vls_server.force_exit ();
+
+                exit_timeout_id = 0;
+                return false;
+            });
+        } else {
+            server_closed (0);
+        }
     }
 }
 }

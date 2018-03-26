@@ -23,6 +23,8 @@ public abstract class Server : Object {
     public bool supports_document_formatting { get; construct; default = false; }
     public bool supports_goto_definition { get; construct; default = false; }
 
+    public bool file_pipes { get; construct; default = false; }
+
     public signal void exit (int return_code);
     protected abstract void did_open (Types.TextDocumentItem document);
     protected abstract void did_change (Types.DidChangeTextDocumentParams params);
@@ -36,6 +38,9 @@ public abstract class Server : Object {
     private bool shutdown_requested = false;
     private bool initialized = false;
 
+    private int stdin_fd = -1;
+    private int stdout_fd = -1;
+
     private const string[] KNOWN_METHODS = {
         "initialize",
         "textDocument/formatting",
@@ -43,15 +48,53 @@ public abstract class Server : Object {
     };
 
     construct {
-        Log.set_default_handler (Logger.log_handler);
+        if (!file_pipes) {
+            Log.set_default_handler (Logger.log_handler);
+        }
 
         server = new Jsonrpc.Server ();
-        var stdin = new UnixInputStream (Posix.STDIN_FILENO, false);
-        var stdout = new UnixOutputStream (Posix.STDOUT_FILENO, false);
+        InputStream stdin;
+        OutputStream stdout;
+
+        if (!file_pipes) {
+            stdin = new UnixInputStream (Posix.STDIN_FILENO, false);
+            stdout = new UnixOutputStream (Posix.STDOUT_FILENO, false);
+        } else {
+            var stdin_file = File.new_for_path ("/tmp/langserver-stdin");
+            if (stdin_file.query_exists ()) {
+                stdin_file.delete ();
+            }
+
+            var stdout_file = File.new_for_path ("/tmp/langserver-stdout");
+            if (stdout_file.query_exists ()) {
+                stdout_file.delete ();
+            }
+
+            var mode = Posix.S_IRUSR | Posix.S_IWUSR | Posix.S_IRGRP | Posix.S_IWGRP;
+            Posix.mkfifo ("/tmp/langserver-stdin", mode);
+            Posix.mkfifo ("/tmp/langserver-stdout", mode);
+
+            stdin_fd = Posix.open ("/tmp/langserver-stdin", Posix.O_NONBLOCK | Posix.O_RDONLY);
+            stdin = new UnixInputStream (stdin_fd, false);
+
+            stdout_fd = Posix.open ("/tmp/langserver-stdout", Posix.O_RDWR);
+            stdout = new UnixOutputStream (stdout_fd, false);
+        }
+
         server.accept_io_stream (new SimpleIOStream (stdin, stdout));
 
         server.notification.connect (handle_notification);
         server.handle_call.connect (handle_method);
+    }
+
+    ~Server () {
+        if (stdin_fd != -1) {
+            Posix.close (stdin_fd);
+        }
+
+        if (stdout_fd != -1) {
+            Posix.close (stdout_fd);
+        }
     }
 
     private void handle_initialize (Jsonrpc.Client client, Variant id, Variant params) {
